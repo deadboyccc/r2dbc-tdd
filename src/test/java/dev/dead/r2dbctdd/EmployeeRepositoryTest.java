@@ -61,7 +61,7 @@ class EmployeeRepositoryTest {
     }
 
     @Test
-    void channingMapsAndFlatmap() {
+    void channingMapsAndFlatmap() throws InterruptedException {
         var employee = Mono.just(
                 EmployeeEntity.builder()
                         .firstName("Joe")
@@ -75,6 +75,15 @@ class EmployeeRepositoryTest {
         var flatmapped = resultdemo.flatMap(e -> e);
 
         var result = employee.flatMap(repo::save);
+        var employees =
+                repo.findAll()
+                        .map(EmployeeEntity::getFirstName)
+                        .filter(firstName -> firstName.contains("a"))
+                        .thenMany(flatmapped);
+
+        employees.subscribe(System.out::println);
+        Thread.sleep(5000);
+
 
 
     }
