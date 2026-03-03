@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.r2dbc.test.autoconfigure.DataR2dbcTest;
 import org.springframework.test.annotation.DirtiesContext;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @DataR2dbcTest
@@ -49,6 +50,33 @@ class EmployeeRepositoryTest {
         StepVerifier.create(repo.findAll())
                 .expectNextCount(3)
                 .verifyComplete();
+    }
+
+    @Test
+    void shouldFindEmployeeById() {
+        StepVerifier.create(repo.findById(1L))
+                .expectNextMatches(employee -> employee.getFirstName()
+                        .equals("John"))
+                .verifyComplete();
+    }
+
+    @Test
+    void channingMapsAndFlatmap() {
+        var employee = Mono.just(
+                EmployeeEntity.builder()
+                        .firstName("Joe")
+                        .lastName("Biden")
+                        .status(EmployeeEntity.Status.ONSITE)
+                        .build()
+        );
+        // map
+        var resultdemo = employee.map(repo::save);
+        // flattened
+        var flatmapped = resultdemo.flatMap(e -> e);
+
+        var result = employee.flatMap(repo::save);
+
+
     }
 
     @AfterEach
