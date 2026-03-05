@@ -1,5 +1,6 @@
 package dev.dead.r2dbctdd;
 
+import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,21 @@ class EmployeeRepositoryTest {
 
 
 
+
+    }
+
+    @Test
+    void magicStuff() throws InterruptedException {
+        Mono<Integer> integerMono = Mono.just(1);
+
+        // integerMono2 is Mono<Mono<Integer>>
+        val integerMono2 = integerMono.map(Mono::just);
+
+        // Use flatMap with identity to "unwrap" the inner Mono
+        integerMono2
+                .flatMap(innerMono -> innerMono)
+                .subscribe(val -> System.out.println("Result: " + val));
+        Thread.sleep(1500);
     }
 
     @AfterEach
