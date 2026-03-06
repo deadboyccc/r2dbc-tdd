@@ -1,4 +1,6 @@
 spring:
+  jmx:
+    enabled: true
   sql:
     init:
       mode: always
@@ -8,18 +10,22 @@ spring:
     user:
       name: u
       password: p
-  boot:
-    admin:
-      client:
-        url: http://localhost:9090
-        username: u
-        password: p
+#  boot:
+#    admin:
+#      client:
+#        url: http://localhost:9090
+#        username: u
+#        password: p
 
 management:
+
   info:
     env:
       enabled: true
   endpoints:
+    jmx:
+      exposure:
+        include: "*"
     web:
       exposure:
         include: "*"
@@ -36,3 +42,7 @@ info:
 
 server:
   shutdown: immediate
+logging:
+  level:
+    root: INFO
+    dev.dead: TRACE

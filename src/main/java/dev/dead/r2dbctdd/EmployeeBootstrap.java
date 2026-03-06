@@ -3,6 +3,7 @@ package dev.dead.r2dbctdd;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -13,8 +14,24 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class EmployeeBootstrap implements CommandLineRunner {
 
-    private final EmployeeRepository repository; // Assuming you have a ReactiveCrudRepository
+    private final EmployeeRepository repository;
     private final Random random = new Random();
+
+    @Scheduled(fixedRate = 8000)
+    public void addAnotherEmployee() {
+        EmployeeEntity.Status[] statuses = EmployeeEntity.Status.values();
+        EmployeeEntity newEmployee = EmployeeEntity.builder()
+                .firstName("First" + random.nextInt(1000))
+                .lastName("Last" + random.nextInt(1000))
+                .status(statuses[random.nextInt(statuses.length)])
+                .build();
+
+        repository.save(newEmployee)
+                .subscribe(
+                        employee -> log.info("Added new employee: {}", employee),
+                        error -> log.error("Error adding employee: ", error)
+                );
+    }
 
     @Override
     public void run(String... args) {
