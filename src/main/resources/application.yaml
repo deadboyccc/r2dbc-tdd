@@ -2,3 +2,22 @@ spring:
   sql.init.mode: always
   application:
     name: r2dbc-tdd
+#actuator
+management:
+  info.env.enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+info:
+  contact:
+    name: R2DBC TDD Demo
+    email: random@r@c.om
+    phone: 1234567890
+  app:
+    name: r2dbc-tdd
+    description: A demo application for R2DBC and TDD
+    version: 1.0.0
+# disable graceful shutdown
+server:
+  shutdown: immediate

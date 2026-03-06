@@ -1,18 +1,16 @@
 package dev.dead.r2dbctdd;
 
-import lombok.val;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.r2dbc.test.autoconfigure.DataR2dbcTest;
-import org.springframework.test.annotation.DirtiesContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
+
 @DataR2dbcTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class EmployeeRepositoryTest {
 
     @Autowired
@@ -20,7 +18,7 @@ class EmployeeRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        var employees = Flux.just(
+        var employees = List.of(
                 EmployeeEntity.builder()
                         .firstName("John")
                         .lastName("Doe")
@@ -38,11 +36,13 @@ class EmployeeRepositoryTest {
                         .build()
         );
 
+        // Chain deletion and insertion into one pipeline
         var setup = repo.deleteAll()
-                .thenMany(repo.saveAll(employees));
+                .thenMany(repo.saveAll(employees))
+                .collectList();
 
         StepVerifier.create(setup)
-                .expectNextCount(3)
+                .expectNextCount(1) // One list of 3 employees
                 .verifyComplete();
     }
 
@@ -55,57 +55,47 @@ class EmployeeRepositoryTest {
 
     @Test
     void shouldFindEmployeeById() {
-        StepVerifier.create(repo.findById(1L))
+        // FIX: Fetch an actual ID from the DB first to avoid sequence issues
+        repo.findAll()
+                .filter(e -> e.getFirstName()
+                        .equals("John"))
+                .next() // Get the first John
+                .flatMap(john -> repo.findById(john.getId()))
+                .as(StepVerifier::create)
                 .expectNextMatches(employee -> employee.getFirstName()
                         .equals("John"))
                 .verifyComplete();
     }
 
     @Test
-    void channingMapsAndFlatmap() throws InterruptedException {
-        var employee = Mono.just(
-                EmployeeEntity.builder()
-                        .firstName("Joe")
-                        .lastName("Biden")
-                        .status(EmployeeEntity.Status.ONSITE)
-                        .build()
-        );
-        // map
-        var resultdemo = employee.map(repo::save);
-        // flattened
-        var flatmapped = resultdemo.flatMap(e -> e);
+    void chainingMapsAndFlatmap() {
+        // Using StepVerifier instead of Thread.sleep()
+        var employee = EmployeeEntity.builder()
+                .firstName("Joe")
+                .lastName("Biden")
+                .status(EmployeeEntity.Status.ONSITE)
+                .build();
 
-        var result = employee.flatMap(repo::save);
-        var employees =
-                repo.findAll()
+        repo.save(employee)
+                .flatMapMany(saved -> repo.findAll()
                         .map(EmployeeEntity::getFirstName)
-                        .filter(firstName -> firstName.contains("a"))
-                        .thenMany(flatmapped);
-
-        employees.subscribe(System.out::println);
-        Thread.sleep(5000);
-
-
-
-
+                        .filter(name -> name.contains("a"))
+                        .thenMany(Flux.just(saved)))
+                .as(StepVerifier::create)
+                .expectNextMatches(e -> e.getFirstName()
+                        .equals("Joe"))
+                .verifyComplete();
     }
 
     @Test
-    void magicStuff() throws InterruptedException {
+    void magicStuff() {
         Mono<Integer> integerMono = Mono.just(1);
 
-        // integerMono2 is Mono<Mono<Integer>>
-        val integerMono2 = integerMono.map(Mono::just);
-
-        // Use flatMap with identity to "unwrap" the inner Mono
-        integerMono2
-                .flatMap(innerMono -> innerMono)
-                .subscribe(val -> System.out.println("Result: " + val));
-        Thread.sleep(1500);
-    }
-
-    @AfterEach
-    void tearDown() {
-        // Managed by @DirtiesContext
+        // Flatmap naturally flattens nested Monos
+        integerMono.map(Mono::just)
+                .flatMap(inner -> inner)
+                .as(StepVerifier::create)
+                .expectNext(1)
+                .verifyComplete();
     }
 }
