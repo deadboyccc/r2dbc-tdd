@@ -18,7 +18,9 @@ spring:
 #        password: p
 
 management:
-
+  health:
+    probes:
+      enabled: true
   info:
     env:
       enabled: true
